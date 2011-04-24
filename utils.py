@@ -2,9 +2,12 @@ from Queue import Queue, Empty, Full
 from threading import Thread
 
 
-def thread_out_work_iter(arg_iterator,f,thread_count=4):
-    work_queue = Queue()
-    result_queue = Queue()
+# TODO: create generator version of iter
+
+def thread_out_work_iter(arg_iterator,f,thread_count=4,
+                         work_queue=None,result_queue=None):
+    work_queue = work_queue or Queue()
+    result_queue = result_queue or Queue()
 
     # we are going to create our threads
     # from the function / queues
