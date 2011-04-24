@@ -1,6 +1,29 @@
 from Queue import Queue, Empty, Full
 from threading import Thread
 
+
+def thread_out_work_iter(arg_iterator,f,thread_count=4):
+    work_queue = Queue()
+    result_queue = Queue()
+
+    # we are going to create our threads
+    # from the function / queues
+    threads = []
+    for i in xrange(thread_count):
+        thread = thread_out_function(f,work_queue,result_queue)
+        threads.append(thread)
+
+    # now start up our threads (as we feed in work)
+    active_threads = 0
+    for args in arg_iterator():
+        # add the args to the work queue
+        work_queue.put_nowait(args)
+
+        # start up a thread if there are any left to start
+        if active_threads < len(threads):
+            threads[active_threads].start()
+            active_threads += 1
+
 def thread_out_work(args,f,thread_percentage=.26,fake_it=False):
     results = []
     if fake_it:
@@ -24,17 +47,24 @@ def thread_out_work(args,f,thread_percentage=.26,fake_it=False):
             pass
     return results
 
-def thread_out_function(f,in_queue,out_queue):
+def thread_out_function(f,in_queue,out_queue,never_ending=False):
     def threaded(f,in_queue,out_queue):
-        while not in_queue.empty() or out_queue.empty():
+        while True:
             try:
-                args = in_queue.get(True,2)
+                # we'll wait around a lil bit
+                args = in_queue.get(True,5)
                 r = f(*args)
                 out_queue.put(r,True)
+
             except Empty, ex:
-                pass
+                # if we are out of work and not never ending
+                # than our job is done
+                if not never_ending:
+                    return True
+
             except Exception:
                 # we'll try again
+                raise
                 print 're-q:',args
                 in_queue.put_nowait(args)
         return True
